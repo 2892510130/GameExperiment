@@ -1,2 +1,5 @@
 # building files
 build/
+
+# log files
+log.txt

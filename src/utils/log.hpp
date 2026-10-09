@@ -3,6 +3,7 @@
 #include <string_view>
 #include <format>
 #include <utility>
+#include <fstream>
 
 namespace Utils {
 
@@ -37,7 +38,7 @@ std::string getTimeStamp();
 
 class Log {
 public:
-    // Functions
+    /* Public functions */
     template <typename... Args>
     static void log(
         LogLevel level,
@@ -45,8 +46,8 @@ public:
         std::format_string<Args...> fmt,
         Args&&... args
     ) {
-        if (level < s_log_level) return;
-        printMessage(level, comp, std::format(fmt, std::forward<Args>(args)...));
+        if (level < m_log_level) return;
+        writeLine(level, comp, std::format(fmt, std::forward<Args>(args)...));
     }
 
 #define LOG(NAME, LEVEL)                                    \
@@ -69,12 +70,23 @@ public:
     static void setLogLevel(int log_level) {
         if (log_level < 0) log_level = 0;
         if (log_level > 3) log_level = 3;
-        s_log_level = static_cast<LogLevel>(log_level);
+        m_log_level = static_cast<LogLevel>(log_level);
     }
 
+    static LogLevel getLogLevel() {
+        return m_log_level;
+    }
+
+    static void openLogFile(std::string& file_name);
+
 private:
-    static void printMessage(LogLevel level, std::string_view comp, std::string_view msg);
-    static inline LogLevel s_log_level = LogLevel::Info;
+    /* Private functions */
+    static void writeLine(LogLevel level, std::string_view comp, std::string_view msg);
+
+    /* Private variables */
+    static inline LogLevel m_log_level = LogLevel::Info;
+    static inline bool m_log_to_file = true;
+    static inline std::ofstream m_log_file;
 };
 
 } // namespace Utils
