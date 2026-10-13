@@ -4,9 +4,16 @@
 #include <format>
 #include <utility>
 #include <fstream>
+#include <vector>
+
+#include "synchronised.hpp"
 
 namespace Utils {
 
+// Some basic functions
+std::string getTimeStamp();
+
+// Log level enum class
 enum class LogLevel: int {
     Debug   = 0,
     Info    = 1,
@@ -34,8 +41,16 @@ inline constexpr std::string_view toString(LogLevel level) {
     return "?";
 }
 
-std::string getTimeStamp();
+// Log data components
+struct LogLine
+{
+    LogLevel m_log_level;
+    std::string m_comp_name;
+    std::string m_line;
+};
 
+
+// Static log class
 class Log {
 public:
     /* Public functions */
@@ -47,7 +62,7 @@ public:
         Args&&... args
     ) {
         if (level < m_log_level) return;
-        writeLine(level, comp, std::format(fmt, std::forward<Args>(args)...));
+        writeLog(level, comp, std::format(fmt, std::forward<Args>(args)...));
     }
 
 #define LOG(NAME, LEVEL)                                    \
@@ -64,8 +79,7 @@ public:
     LOG(info,    LogLevel::Info);
     LOG(warning, LogLevel::Warning);
     LOG(error,   LogLevel::Error);
-
-    #undef LOG
+#undef LOG
 
     static void setLogLevel(int log_level) {
         if (log_level < 0) log_level = 0;
@@ -77,16 +91,26 @@ public:
         return m_log_level;
     }
 
+    static void setBufferSize(int buffer_size) {
+        m_buffer_size = buffer_size;
+    }
+
     static void openLogFile(std::string& file_name);
+
+    static void flushBuffer();
 
 private:
     /* Private functions */
     static void writeLine(LogLevel level, std::string_view comp, std::string_view msg);
+    static void writeLog(LogLevel level, std::string_view comp, std::string_view msg);
 
     /* Private variables */
     static inline LogLevel m_log_level = LogLevel::Info;
     static inline bool m_log_to_file = true;
     static inline std::ofstream m_log_file;
+    static inline Synchronised<std::vector<LogLine>> m_buffer;
+    static inline size_t m_buffer_size = 1;
+    static inline std::mutex m_output_mutex;
 };
 
 } // namespace Utils
